@@ -15,12 +15,17 @@ def bigrams(tokens):
 
 def prefixes(tokens, n=6):
     return ['_'+w[:i] for w in tokens
-                      for i in range(1, min(n+1, len(tokens)-2))]
+                      for i in range(1, min(n+1, len(w)-2))]
 
 def suffixes(tokens, n=6):
     return [w[-i:]+'_' for w in tokens
-                       for i in range(1, min(n+1, len(tokens)-2))]
+                       for i in range(1, min(n+1, len(w)-2))]
 
+def subsequences(tokens, n=10):
+    return ['#'+w[i:j]+'#'
+            for w in tokens
+            for i in range(0, len(w)-1)
+            for j in range(i+1, len(w)+1)]
 
 def find_translations(t):
     filename, contexts, options = t
@@ -49,6 +54,8 @@ def find_translations(t):
         extractors.append(prefixes)
     if 'suffixes' in features:
         extractors.append(suffixes)
+    if 'subsequences' in features:
+        extractors.append(subsequences)
 
     for extractor in extractors:
         for sent_id, sent in mpf.sentences.items():
@@ -75,7 +82,22 @@ def find_translations(t):
     scores = sorted([
             (item, similarity(context_counts))
             for item, context_counts in candidates],
-            key=itemgetter(1), reverse=True)
+            key=lambda t: (-t[1], -len(t[0])))
+
+    if 'subsequences' in features:
+        raw_scores = scores
+        scores = []
+        seen = set()
+        for item, x in raw_scores:
+            if item[0] == '#' and item[-1] == '#':
+                w = item[1:-1]
+                if w in seen: continue
+                for i in range(0, len(w)-1):
+                    for j in range(i+1, len(w)+1):
+                        seen.add(w[i:j])
+            elif item[0] != '_' and item[-1] != '_':
+                seen.add(item)
+            scores.append((item, x))
 
     return scores[:n_best] if n_best else scores
 

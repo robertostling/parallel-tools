@@ -95,9 +95,10 @@ this process.'''.strip(), file=sys.stderr)
         for sent, m in examples:
             i = m.start()
             j = m.end()
-            print('%s<<<%s>>>%s' % (sent[:i], sent[i:j], sent[j:]))
+            print('%s\033[91m%s\033[0m%s' % (sent[:i], sent[i:j], sent[j:]))
     else:
-        sent_id_count.update((sent_id, n) for sent_id, (k, n) in contexts)
+        for sent_id, (k, n) in contexts.items():
+            sent_id_count[sent_id] += n
         for sent_id, n in sorted(sent_id_count.items()):
             k = sent_id_matches[sent_id]
             if sent_id in contexts:
