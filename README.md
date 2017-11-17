@@ -13,7 +13,7 @@ sentence of the English translations. The second part, using
 German and Digo that match the distribution of *not yet*.
 
 ```
-    python3 find_instances.py -e ' not yet ' eng | \
+python3 find_instances.py -e ' not yet ' eng | \
     python3 find_equivalents.py --features=words,bigrams,sequences ind deu dig
 ```
 
@@ -22,7 +22,7 @@ corresponds to the average distribution of the word *belum* in Indonesian,
 the bigram *noch nicht* in German, and the morpheme *dzangbwe* in Digo:
 
 ```
-    python3 find_instances.py -e ' belum ' ind | \
+python3 find_instances.py -e ' belum ' ind | \
     python3 find_instances.py -a -e ' noch nicht ' deu | \
     python3 find_instances.py -a -e 'dzangbwe' dig | \
     python3 find_equivalents.py --features=words,bigrams,subsequences eng
@@ -34,7 +34,7 @@ and then combine the Digo contexts with the combined Indonesian/German ones.
 We can of course also search for these individually:
 
 ```
-    python3 find_instances.py -e 'dzangbwe' dig | \
+python3 find_instances.py -e 'dzangbwe' dig | \
     python3 find_equivalents.py --features=words,bigrams,subsequences eng
 ```
 
