@@ -2,8 +2,17 @@ import sys
 import argparse
 import re
 from collections import Counter
+import glob
+from configparser import ConfigParser
+import os.path
 
 from mpfile import MPFile
+
+CONFIG = ConfigParser()
+for config_filename in ['/etc/parallel-tools']:
+    if os.path.exists(config_filename):
+        CONFIG.read(config_filename)
+
 
 RE_CONTEXT = re.compile('(\w+):(\d+):(\d+)$')
 
@@ -13,6 +22,24 @@ def parse_context(s):
         raise ValueError('Invalid context description: "%s"' % s)
     return (m.group(1), int(m.group(2)), int(m.group(3)))
 
+
+def find_files(names, corpus_path=None):
+    if corpus_path is None:
+        if 'default' in CONFIG and 'corpus_path' in CONFIG['default']:
+            corpus_path = CONFIG['default']['corpus_path']
+    filenames = []
+    for name in names:
+        if os.path.exists(name):
+            filenames.append(name)
+        elif corpus_path:
+            found = glob.glob(os.path.join(corpus_path, name + '*.txt'))
+            if found:
+                filenames.extend(found)
+            else:
+                print('WARNING: %s not found' % name, file=sys.stderr)
+        else:
+            print('WARNING: %s not found' % name, file=sys.stderr)
+    return filenames
 
 def main():
     parser = argparse.ArgumentParser(description='Parallel corpus searching')
@@ -50,7 +77,7 @@ this process.'''.strip(), file=sys.stderr)
     sent_id_matches = Counter()
     examples = []
 
-    for filename in args.files:
+    for filename in find_files(args.files):
         mpf = MPFile(filename)
         sent_id_count.update(mpf.sentences.keys())
         for sent_id, sent in mpf.sentences.items():
@@ -70,7 +97,6 @@ this process.'''.strip(), file=sys.stderr)
             j = m.end()
             print('%s<<<%s>>>%s' % (sent[:i], sent[i:j], sent[j:]))
     else:
-        # TODO: merge with input contexts
         sent_id_count.update((sent_id, n) for sent_id, (k, n) in contexts)
         for sent_id, n in sorted(sent_id_count.items()):
             k = sent_id_matches[sent_id]
