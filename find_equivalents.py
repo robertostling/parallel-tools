@@ -2,10 +2,13 @@ import sys
 import math
 import argparse
 import re
+
 from multiprocessing import Pool
 from collections import Counter, defaultdict
 from operator import itemgetter
 import os.path
+
+from scipy.special import gammaln
 
 from mpfile import MPFile
 from find_instances import parse_context, find_files
@@ -27,6 +30,13 @@ def subsequences(tokens, n=10):
             for i in range(0, len(w)-1)
             for j in range(i+1, len(w)+1)]
 
+def logll_dirichlet_multinomial(alpha, n, x):
+    assert len(alpha) == len(x)
+    assert n == sum(x)
+    z = gammaln(sum(alpha)) - gammaln(n + sum(alpha))
+    return z + sum(gammaln(x[k] + alpha[k]) - gammaln(alpha[k])
+                   for k in range(len(x)))
+
 def find_translations(t):
     filename, contexts, options = t
 
@@ -36,6 +46,9 @@ def find_translations(t):
     all_context_sents = {sent_id for sent_id, k, n in contexts}
     context_vector = {sent_id: k/n for sent_id, k, n in contexts if k}
     item_context_counts = defaultdict(Counter)
+
+    vocabulary = {token for sentence in mpf.sentences.values()
+                        for token in sentence}
 
     # Maximum length ratio allowed between candidates and the contexts
     # That is, items that are this many times more (or less) common than the
@@ -75,9 +88,26 @@ def find_translations(t):
     contexts_norm = math.sqrt(sum(x*x for x in contexts_vector.values()))
 
     def similarity(counts):
-        z = sum(x*contexts_vector[sent_id] for sent_id, x in counts.items())
-        counts_norm = math.sqrt(sum(x*x for x in counts.values()))
-        return z / (counts_norm * contexts_norm)
+        if options['score'] == 'bayes':
+            u = set(counts.keys())
+            v = {k for k, v in context_vector.items() if v >= 0.5}
+            n = len(all_context_sents)
+            assert n >= len(u|v)
+            log_p_independent = logll_dirichlet_multinomial(
+                    [1.0, 1.0], n, [len(u), n-len(u)])
+            log_p_independent += logll_dirichlet_multinomial(
+                    [1.0, 1.0], n, [len(v), n-len(v)])
+            log_p_joint =  logll_dirichlet_multinomial(
+                    [1.0, 1.0, 1.0, 1.0],  n,
+                    [len(u-v), len(v-u), len(v&u), n-len(v|u)])
+            log_p_prior = -math.log(len(vocabulary))
+            return log_p_prior + log_p_joint - log_p_independent
+        elif options['score'] == 'cosine':
+            z = sum(x*contexts_vector[sent_id] for sent_id, x in counts.items())
+            counts_norm = math.sqrt(sum(x*x for x in counts.values()))
+            return z / (counts_norm * contexts_norm)
+        else:
+            assert False
 
     scores = sorted([
             (item, similarity(context_counts))
@@ -111,6 +141,10 @@ def main():
             help='comma-separated list of features: words, bigrams, '
                  'prefixes, suffixes')
     parser.add_argument(
+            '-s', '--score', type=str, metavar='NAME',
+            default='bayes',
+            help='scoring method: bayes (Dirichlet-multinomial model), cosine')
+    parser.add_argument(
             '-m', '--max-ratio', type=int, default=4, metavar='N',
             help='higher values widens the search space')
     parser.add_argument(
@@ -142,7 +176,8 @@ def main():
 
     options = {'n_best': args.n_best,
                'features': args.features.split(','),
-               'max_ratio': args.max_ratio}
+               'max_ratio': args.max_ratio,
+               'score': args.score}
 
     filenames = find_files(args.files, corpus_path=args.corpus_path)
     tasks = [(filename, contexts, options) for filename in filenames]
