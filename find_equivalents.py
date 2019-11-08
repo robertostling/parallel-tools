@@ -47,8 +47,12 @@ def find_translations(t):
     context_vector = {sent_id: k/n for sent_id, k, n in contexts if k}
     item_context_counts = defaultdict(Counter)
 
-    vocabulary = {token for sentence in mpf.sentences.values()
-                        for token in sentence}
+    if options.get('lowercase'):
+        vocabulary = {token for sentence in mpf.sentences.values()
+                            for token in sentence.lower().split()}
+    else:
+        vocabulary = {token for sentence in mpf.sentences.values()
+                            for token in sentence.split()}
 
     # Maximum length ratio allowed between candidates and the contexts
     # That is, items that are this many times more (or less) common than the
@@ -72,6 +76,8 @@ def find_translations(t):
 
     for extractor in extractors:
         for sent_id, sent in mpf.sentences.items():
+            if options.get('lowercase'):
+                sent = sent.lower()
             if sent_id not in all_context_sents: continue
             for item in extractor(sent.split()):
                 item_context_counts[item][sent_id] += 1
@@ -129,7 +135,7 @@ def find_translations(t):
                 seen.add(item)
             scores.append((item, x))
 
-    return scores[:n_best] if n_best else scores
+    return (scores[:n_best] if n_best else scores, filename)
 
 
 def main():
@@ -150,6 +156,12 @@ def main():
     parser.add_argument(
             '-n', '--n-best', type=int, default=5, metavar='N',
             help='print the N best matches only')
+    parser.add_argument(
+            '-v', '--verbose', action='store_true',
+            help='more verbose output')
+    parser.add_argument(
+            '-l', '--lowercase', action='store_true',
+            help='lower-case data before searching')
     parser.add_argument(
             '-c', '--contexts', type=str, metavar='FILE',
             help='file containing contexts (from find_instances.py), default:'
@@ -177,19 +189,22 @@ def main():
     options = {'n_best': args.n_best,
                'features': args.features.split(','),
                'max_ratio': args.max_ratio,
-               'score': args.score}
+               'score': args.score,
+               'lowercase': args.lowercase}
 
     filenames = find_files(args.files, corpus_path=args.corpus_path)
     tasks = [(filename, contexts, options) for filename in filenames]
 
-    with Pool() as p:
-        result = list(p.map(find_translations, tasks))
+    if args.verbose:
+        print('Searching %d target texts in parallel...' % len(filenames),
+                file=sys.stderr)
 
-    for scores, filename in zip(result, filenames):
-        print(os.path.basename(filename))
-        for item, score in scores:
-            print('    %.2f  %s' % (score, item))
-        print()
+    with Pool() as p:
+        for scores, filename in p.imap_unordered(find_translations, tasks):
+            print(os.path.basename(filename))
+            for item, score in scores:
+                print('    %.2f  %s' % (score, item))
+            print(flush=True)
 
 
 if __name__ == '__main__': main()

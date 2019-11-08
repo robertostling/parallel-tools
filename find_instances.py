@@ -50,6 +50,9 @@ def main():
             '-v', '--verbose', action='store_true',
             help='Print matches for manual inspection')
     parser.add_argument(
+            '-l', '--lowercase', action='store_true',
+            help='Lower-case text before matching')
+    parser.add_argument(
             '-a', '--append', action='store_true',
             help='Merge the mathches of this search with previous results')
     parser.add_argument(
@@ -81,6 +84,8 @@ this process.'''.strip(), file=sys.stderr)
         mpf = MPFile(filename)
         sent_id_count.update(mpf.sentences.keys())
         for sent_id, sent in mpf.sentences.items():
+            if args.lowercase:
+                sent = sent.lower()
             for regex in regexes:
                 if args.verbose:
                     m = regex.search(sent)
