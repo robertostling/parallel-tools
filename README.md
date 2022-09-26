@@ -74,7 +74,7 @@ German and Digo that match the distribution of *not yet*.
 
 ```
 python3 find_instances.py -e ' not yet ' eng | \
-    python3 find_equivalents.py --features=words,bigrams,sequences ind deu dig
+    python3 find_equivalents.py --features=words,bigrams,subsequences ind deu dig
 ```
 
 You can also do the inverse, that is, search for something in English which
