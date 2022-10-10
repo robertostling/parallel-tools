@@ -153,7 +153,7 @@ And for the plural ones:
 
     python3 find_instances.py -e ' snakes ' eng | python3 find_instances.py -a -v -e ' orm' swe-x-bible-1917
 
-From which you could tentatively conclude that the suffix "-ar" as a plural
+From which you could tentatively conclude that the suffix "-ar" is a plural
 marker for this noun in Swedish.
 
 ## Performance
