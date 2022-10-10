@@ -26,7 +26,7 @@ class MPFile:
                     fields = line.split('\t')
                     if len(fields) == 2:
                         sent_id, sent = fields
-                        self.sentences[sent_id] = sent.strip()
+                        self.sentences[sent_id.strip()] = sent.strip()
                     elif len(fields) < 2:
                         pass
                     else:

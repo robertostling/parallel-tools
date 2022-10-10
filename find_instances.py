@@ -69,6 +69,7 @@ def main():
 Note that find_instances.py expects a list of contexts on standard input.
 This list may be empty. Check if you accidentally directed some other data to
 this process.'''.strip(), file=sys.stderr)
+            sys.exit(1)
     else:
         contexts = []
 
@@ -90,8 +91,16 @@ this process.'''.strip(), file=sys.stderr)
                 if args.verbose:
                     m = regex.search(sent)
                     if m:
-                        sent_id_matches[sent_id] += 1
-                        examples.append((sent, m))
+                        show = True
+                        if args.append:
+                            if sent_id in contexts:
+                                k, n = contexts[sent_id]
+                                if k*2 < n:
+                                    show = False
+                            else:
+                                show = False
+                        if show:
+                            examples.append((sent, m))
                 else:
                     if regex.search(sent):
                         sent_id_matches[sent_id] += 1

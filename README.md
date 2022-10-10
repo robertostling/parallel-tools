@@ -109,6 +109,53 @@ corpus_path=/data/paralleltext/bibles/corpus
 
 It is also possible to specify filenames directly, instead of ISO codes.
 
+## Types of searches
+
+The argument `--features` takes a comma-separated list which can combine the
+following types:
+
+* words
+* bigrams
+* prefixes
+* suffixes
+* subsequences
+
+Note that `subsequences` also covers prefixes and suffixes, so there is no
+point combining these. If you only want to look at the end or beginning of
+words, specifying `suffixes` or `prefixes` can save time, however.
+
+In the hits, underscore `_` is used to indicate a word boundary.
+
+
+## Comparing expressions
+
+You can also combine `-v` with `-a` to only display instances that also match
+the previous query. For instance, if you want manually look for plural
+markers in Swedish, you can start by selecting a suitable noun in English and
+searching for its equivalent. In this case, we start with the forms "snake"
+and "snakes" (regular expression: ` snakes? `):
+
+```
+python3 find_instances.py -e ' snakes? ' eng | python3 find_equivalents.py --features=subsequences swe-x-bible-1917
+    83.07  _orm
+    46.80  _orm_
+    35.06  orm_
+    5.27  _ormar_
+    4.57  _ormar
+```
+
+The root is (correctly) identified as "orm", with possible suffixes. To look
+at only the singular instances:
+
+    python3 find_instances.py -e ' snake ' eng | python3 find_instances.py -a -v -e ' orm' swe-x-bible-1917
+
+And for the plural ones:
+
+    python3 find_instances.py -e ' snakes ' eng | python3 find_instances.py -a -v -e ' orm' swe-x-bible-1917
+
+From which you could tentatively conclude that the suffix "-ar" as a plural
+marker for this noun in Swedish.
+
 ## Performance
 
 This benchmark consists of searching through 1698 Bible translations for

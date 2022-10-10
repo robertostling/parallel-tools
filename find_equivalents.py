@@ -14,7 +14,7 @@ from mpfile import MPFile
 from find_instances import parse_context, find_files
 
 def bigrams(tokens):
-    return [w_t+'_'+w_tp1 for w_t, w_tp1 in zip(tokens, tokens[1:])]
+    return ['_'+w_t+'_'+w_tp1+'_' for w_t, w_tp1 in zip(tokens, tokens[1:])]
 
 def prefixes(tokens, n=6):
     return ['_'+w[:i] for w in tokens
@@ -25,10 +25,13 @@ def suffixes(tokens, n=6):
                        for i in range(1, min(n+1, len(w)-2))]
 
 def subsequences(tokens, n=10):
-    return ['#'+w[i:j]+'#'
+    def token_subsequences(w):
+        for i in range(0, len(w)-1):
+            for j in range(i+1, min(len(w)+1, i+n+1)):
+                yield w[i:j]
+    return [part
             for w in tokens
-            for i in range(0, len(w)-1)
-            for j in range(i+1, len(w)+1)]
+            for part in token_subsequences('_'+w+'_')]
 
 def logll_dirichlet_multinomial(alpha, n, x):
     assert len(alpha) == len(x)
@@ -64,7 +67,7 @@ def find_translations(t):
     extractors = []
     features = options.get('features', ['words'])
     if 'words' in features:
-        extractors.append(lambda x: x)
+        extractors.append(lambda x: ['_'+w+'_' for w in x])
     if 'bigrams' in features:
         extractors.append(bigrams)
     if 'prefixes' in features:
