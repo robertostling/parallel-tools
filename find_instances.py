@@ -56,6 +56,9 @@ def main():
             '-a', '--append', action='store_true',
             help='Merge the mathches of this search with previous results')
     parser.add_argument(
+            '-p', '--corpus-path', type=str, metavar='PATH',
+            help='Path to parallel corpus')
+    parser.add_argument(
             'files', nargs='+', metavar='FILE')
 
     args = parser.parse_args()
@@ -81,7 +84,7 @@ this process.'''.strip(), file=sys.stderr)
     sent_id_matches = Counter()
     examples = []
 
-    for filename in find_files(args.files):
+    for filename in find_files(args.files, args.corpus_path):
         mpf = MPFile(filename)
         sent_id_count.update(mpf.sentences.keys())
         for sent_id, sent in mpf.sentences.items():
