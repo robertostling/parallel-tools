@@ -156,6 +156,15 @@ And for the plural ones:
 From which you could tentatively conclude that the suffix "-ar" is a plural
 marker for this noun in Swedish.
 
+## Displaying parallel verses
+
+In addition to the above, it is also possible to use the `show_parallel.py`
+script to print a selection of parallel verses. For instance, the following
+prints the three *shortest* verses containing "snake" or "snakes" in English,
+from two specific translations.
+
+    python3 find_instances.py -e ' snakes? ' eng  | python3 show_parallel.py -s -n 3 eng-x-bible-newinternational swe-x-bible-1917
+
 ## Performance
 
 This benchmark consists of searching through 1698 Bible translations for
